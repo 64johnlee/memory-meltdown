@@ -38,6 +38,27 @@
   const pads=[...document.querySelectorAll('.pad')];
   const FREQ=[330,392,494,659];
   let sequence=[], inputIndex=0, level=0, phase='idle', best=+(localStorage.memBest||0), actx=null;
+  // --- shareable result card + challenge deep-link ---
+  const _qs=new URLSearchParams(location.search);
+  function _gameURL(p){ return location.origin+location.pathname+(p?('?'+p):''); }
+  async function shareCard(title,bigTxt,sub2,text){
+    try{
+      const c=document.createElement('canvas'); c.width=c.height=1080; const x=c.getContext('2d');
+      const g=x.createLinearGradient(0,0,1080,1080); g.addColorStop(0,'#1a0f3d'); g.addColorStop(1,'#070510'); x.fillStyle=g; x.fillRect(0,0,1080,1080);
+      x.fillStyle='rgba(22,242,200,.10)'; x.beginPath(); x.arc(540,430,380,0,7); x.fill(); x.textAlign='center';
+      x.fillStyle='#fff'; x.font='bold 66px Arial'; x.fillText(title,540,250);
+      x.fillStyle='#16f2c8'; x.font='bold 200px Arial'; x.fillText(bigTxt,540,610);
+      x.fillStyle='#ff3df0'; x.font='bold 54px Arial'; x.fillText(sub2,540,740);
+      x.fillStyle='#c9b8ff'; x.font='bold 44px Arial'; x.fillText('VIBE ARCADE',540,960);
+      x.fillStyle='#8a7fb0'; x.font='30px Arial'; x.fillText('64johnlee.github.io/vibe-arcade',540,1012);
+      const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+      const file=new File([blob],'vibe-arcade.png',{type:'image/png'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],text}); return; }
+      const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download='vibe-arcade.png'; a.click(); setTimeout(()=>URL.revokeObjectURL(u),3000);
+      try{ await navigator.clipboard.writeText(text); }catch(_){}
+    }catch(_){ try{ await navigator.clipboard.writeText(text); }catch(__){} }
+  }
+  const _chT=_qs.get('target'); if(_chT) status.textContent='🎯 Beat level '+_chT+'! Watch the pattern…';
   function setPhase(p){ phase=p; }
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
   function tone(i){
@@ -77,8 +98,9 @@
     if(actx&&actx.state==='suspended') actx.resume();
     sequence=[]; level=0; startBtn.classList.add('hidden'); shareBtn.classList.add('hidden'); nextRound();
   };
-  shareBtn.onclick=async()=>{ const t=`I hit level ${shareBtn.dataset.lvl} on Memory Meltdown 🧠 — bet you can't beat it`;
-    if(navigator.share){try{await navigator.share({text:t});return;}catch(_){}} try{await navigator.clipboard.writeText(t);}catch(_){} shareBtn.textContent='Copied! 📸'; };
+  shareBtn.onclick=()=>{ const lvl=shareBtn.dataset.lvl;
+    shareCard('MEMORY MELTDOWN', 'LVL '+lvl, 'how far can you go?', `I hit level ${lvl} on Memory Meltdown 🧠 — beat me 👉 ${_gameURL('target='+lvl)}`);
+    shareBtn.textContent='Shared 📸'; };
 })();
 </script>
 </body>
