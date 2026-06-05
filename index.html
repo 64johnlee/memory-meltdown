@@ -21,6 +21,7 @@
     color:#070510; background:linear-gradient(90deg,#16f2c8,#ff3df0); cursor:pointer; margin-top:16px; }
   .ghost { background:transparent; color:#16f2c8; border:2px solid #16f2c8; }
   .hidden { display:none; }
+  .challenge { font-size:13px; color:#16f2c8; font-weight:900; letter-spacing:.5px; margin-top:8px; min-height:16px; text-align:center; }
 </style>
 </head>
 <body>
@@ -31,16 +32,19 @@
     <div class="pad p2" data-i="2"></div><div class="pad p3" data-i="3"></div>
   </div>
   <button id="start">▶ START</button>
-  <button id="share" class="ghost hidden">📲 Share</button>
+  <button id="share" class="ghost hidden" aria-label="Share your score">📲 Share</button>
+  <div class="challenge" id="ch"></div>
 <script>
 (() => {
-  const status=document.getElementById('status'), startBtn=document.getElementById('start'), shareBtn=document.getElementById('share');
+  const status=document.getElementById('status'), startBtn=document.getElementById('start'),
+        shareBtn=document.getElementById('share'), chEl=document.getElementById('ch');
   const pads=[...document.querySelectorAll('.pad')];
   const FREQ=[330,392,494,659];
   let sequence=[], inputIndex=0, level=0, phase='idle', best=+(localStorage.memBest||0), actx=null;
   // --- shareable result card + challenge deep-link ---
   const _qs=new URLSearchParams(location.search);
   function _gameURL(p){ return location.origin+location.pathname+(p?('?'+p):''); }
+  const _rawT=_qs.get('target'); const _chT=(_rawT&&/^\d+$/.test(_rawT))?+_rawT:0;
   async function shareCard(title,bigTxt,sub2,text){
     try{
       const c=document.createElement('canvas'); c.width=c.height=1080; const x=c.getContext('2d');
@@ -52,13 +56,14 @@
       x.fillStyle='#c9b8ff'; x.font='bold 44px Arial'; x.fillText('VIBE ARCADE',540,960);
       x.fillStyle='#8a7fb0'; x.font='30px Arial'; x.fillText('64johnlee.github.io/vibe-arcade',540,1012);
       const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+      if(!blob) throw new Error('canvas export failed');
       const file=new File([blob],'vibe-arcade.png',{type:'image/png'});
       if(navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],text}); return; }
       const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download='vibe-arcade.png'; a.click(); setTimeout(()=>URL.revokeObjectURL(u),3000);
       try{ await navigator.clipboard.writeText(text); }catch(_){}
     }catch(_){ try{ await navigator.clipboard.writeText(text); }catch(__){} }
   }
-  const _chT=_qs.get('target'); if(_chT) status.textContent='🎯 Beat level '+_chT+'! Watch the pattern…';
+  if(_chT) chEl.textContent='🎯 BEAT LEVEL '+_chT;
   function setPhase(p){ phase=p; }
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
   function tone(i){
@@ -80,6 +85,7 @@
     setPhase('over');
     const reached=level-1; const isBest=reached>best; if(isBest){ best=reached; localStorage.memBest=best; }
     status.textContent=`💥 Meltdown! You reached level ${reached}. ${isBest?'🏆 NEW BEST':'Best '+best}`;
+    if(_chT) chEl.textContent = reached>=_chT ? '🎯 CHALLENGE BEATEN! 🏆' : '🎯 Needed level '+_chT+' — missed by '+(_chT-reached);
     startBtn.textContent='▶ PLAY AGAIN'; startBtn.classList.remove('hidden'); shareBtn.classList.remove('hidden');
     shareBtn.dataset.lvl=reached;
   }
@@ -96,11 +102,13 @@
   startBtn.onclick=()=>{
     if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
     if(actx&&actx.state==='suspended') actx.resume();
-    sequence=[]; level=0; startBtn.classList.add('hidden'); shareBtn.classList.add('hidden'); nextRound();
+    sequence=[]; level=0; startBtn.classList.add('hidden'); shareBtn.classList.add('hidden');
+    if(_chT) chEl.textContent='🎯 BEAT LEVEL '+_chT;
+    nextRound();
   };
-  shareBtn.onclick=()=>{ const lvl=shareBtn.dataset.lvl;
-    shareCard('MEMORY MELTDOWN', 'LVL '+lvl, 'how far can you go?', `I hit level ${lvl} on Memory Meltdown 🧠 — beat me 👉 ${_gameURL('target='+lvl)}`);
-    shareBtn.textContent='Shared 📸'; };
+  shareBtn.onclick=()=>{ const lvl=shareBtn.dataset.lvl; shareBtn.textContent='…';
+    shareCard('MEMORY MELTDOWN', 'LVL '+lvl, 'how far can you go?', `I hit level ${lvl} on Memory Meltdown 🧠 — beat me 👉 ${_gameURL('target='+lvl)}`)
+      .then(()=>{ shareBtn.textContent='Shared 📸'; }); };
 })();
 </script>
 </body>
