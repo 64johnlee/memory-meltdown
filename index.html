@@ -13,8 +13,10 @@
   h1 { font-size:28px; text-shadow:0 0 16px #16f2c8; }
   .status { font-size:16px; color:#c8b8ff; margin:8px 0 14px; min-height:22px; text-align:center; }
   .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; width:min(86vw,340px); height:min(86vw,340px); }
-  .pad { border-radius:18px; opacity:.45; transition:opacity .06s, transform .06s; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:36px; }
+  .pad { border-radius:18px; opacity:.45; transition:opacity .06s, transform .06s; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:36px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.7)); }
+  @keyframes lvlbounce { 0%{transform:scale(1)} 35%{transform:scale(1.35)} 65%{transform:scale(.92)} 100%{transform:scale(1)} }
   .lvlbadge { font-size:52px; font-weight:900; min-height:0; text-align:center; color:#16f2c8; text-shadow:0 0 24px #16f2c8; transition:all .2s; }
+  .lvlbadge.bump { animation:lvlbounce .38s ease-out; }
   .pad.lit { opacity:1; transform:scale(1.04); box-shadow:0 0 30px currentColor; }
   .p0{ background:#16f2c8; color:#16f2c8 } .p1{ background:#ff3df0; color:#ff3df0 }
   .p2{ background:#ffe15d; color:#ffe15d } .p3{ background:#7b5cff; color:#7b5cff }
@@ -82,7 +84,7 @@
     for(const i of sequence){ await light(i,speed); }
     inputIndex=0; setPhase('input'); status.textContent='Your turn! '+(sequence.length)+' to go';
   }
-  function nextRound(){ sequence.push(Math.floor(Math.random()*4)); level=sequence.length; lvlEl.textContent='LVL '+level; playback(); }
+  function nextRound(){ sequence.push(Math.floor(Math.random()*4)); level=sequence.length; lvlEl.textContent='LVL '+level; lvlEl.classList.remove('bump'); void lvlEl.offsetWidth; lvlEl.classList.add('bump'); playback(); }
   function gameOver(){
     setPhase('over');
     const reached=level-1; const isBest=reached>best; if(isBest){ best=reached; localStorage.memBest=best; }
